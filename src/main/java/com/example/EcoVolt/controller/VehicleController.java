@@ -21,6 +21,12 @@ public class VehicleController {
     public List<Vehicle> getAllVehicles() {
         return vehicleRepository.findAll();
     }
+    // ✅ Add this endpoint to fetch the list of cities
+    @GetMapping("/locations")
+    public List<String> getLocations() {
+        return vehicleRepository.findDistinctCurrentLocation();
+    }
+    
 
     // 2. REGISTER A NEW VEHICLE (Updated for Smart Booking)
     @PostMapping("/register") // ✅ Matches the previous instruction

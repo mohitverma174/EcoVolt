@@ -20,6 +20,14 @@ public class RideController {
 
     @Autowired
     private VehicleRepository vehicleRepository; // ✅ We now talk to the Vehicles Table
+    // ✅ NEW: Payment Endpoint
+    @PutMapping("/{rideId}/pay")
+    public Ride payForRide(@PathVariable String rideId) {
+        return rideRepository.findById(rideId).map(ride -> {
+            ride.setStatus("PAID"); // Update status to PAID
+            return rideRepository.save(ride);
+        }).orElseThrow(() -> new RuntimeException("Ride not found"));
+    }
 
     @PostMapping("/book")
     public Ride bookRide(@RequestBody Ride rideRequest) {
@@ -73,6 +81,11 @@ public class RideController {
     @GetMapping("/driver/{email}")
     public List<Ride> getDriverRides(@PathVariable String email) {
         return rideRepository.findByDriverEmail(email);
+    }
+    // ✅ ADD THIS METHOD: Get rides for a specific passenger
+    @GetMapping("/passenger/{email}")
+    public List<Ride> getPassengerRides(@PathVariable String email) {
+        return rideRepository.findByPassengerEmail(email);
     }
 
     // 2. Update Ride Status (Accept, Start, Complete)
