@@ -15,15 +15,32 @@ function RegisterVehicle() {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            // CALLS THE DYNAMIC API (No more hardcoding!)
-            await axios.post('http://localhost:8080/api/vehicles', formData);
-            setMessage('✅ Vehicle Registered Successfully! It is now available for booking.');
-        } catch (error) {
-            setMessage('❌ Error registering vehicle.');
+    e.preventDefault();
+    try {
+      // 1. Get the Token from Local Storage
+      const token = localStorage.getItem('jwtToken'); 
+      
+      // 2. Send Data + Token
+      await axios.post('http://localhost:8080/api/vehicles', formData, {
+        headers: {
+          'Authorization': `Bearer ${token}` // <--- THIS IS CRITICAL
         }
-    };
+      });
+
+      alert('Vehicle Registered Successfully! 🚗');
+      // Optional: Clear form
+      setFormData({ 
+          vehicleType: 'E-Car', 
+          vehicleModel: '', 
+          vehicleNumber: '', 
+          currentLocation: '' 
+      }); 
+
+    } catch (error) {
+      console.error(error);
+      alert('Registration Failed: ' + (error.response?.status === 403 ? "Permission Denied (Check Token)" : "Server Error"));
+    }
+  };
 
     return (
         <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px', maxWidth: '400px', margin: '20px auto' }}>
@@ -58,7 +75,18 @@ function RegisterVehicle() {
                 />
 
                 <button type="submit" style={{ background: '#007bff', color: 'white', padding: '10px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+
                     Register Vehicle
+                    
+
+                 <input 
+    type="text" 
+    placeholder="Current City (e.g. Indore)" 
+    value={formData.currentLocation || ''} 
+    onChange={(e) => setFormData({...formData, currentLocation: e.target.value})} 
+    required 
+    style={{ padding: '10px', marginBottom: '10px', width: '100%' }}
+/>
                 </button>
             </form>
             {message && <p style={{ marginTop: '10px', fontWeight: 'bold' }}>{message}</p>}

@@ -1,0 +1,120 @@
+/* Modern Navbar Styling */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Logo Area */
+.navbar-brand {
+  font-size: 26px;
+  font-weight: 800;
+  color: #2c3e50;
+  letter-spacing: -0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-highlight {
+  color: #28a745; /* Eco Green */
+}
+
+/* Navigation Links (Center) */
+.navbar-center {
+  display: flex;
+  gap: 30px;
+}
+
+.nav-link {
+  font-size: 16px;
+  font-weight: 600;
+  color: #7f8c8d;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  background-color: #f0fdf4; /* Light Green Bg */
+  color: #28a745;
+}
+
+.nav-link.active {
+  color: #28a745;
+  background-color: #e8f5e9;
+}
+
+/* User Profile Area (Right) */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Avatar Circle */
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #28a745, #218838);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 18px;
+  box-shadow: 0 2px 5px rgba(40, 167, 69, 0.3);
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #333;
+}
+
+.user-role {
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Logout Button */
+.logout-btn {
+  background-color: transparent;
+  border: 1px solid #ffcccc;
+  color: #dc3545;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}

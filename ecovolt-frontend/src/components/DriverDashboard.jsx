@@ -1,88 +1,155 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import './DriverDashboard.css'; 
 
-function DriverDashboard() {
-    const [vehicleId, setVehicleId] = useState('');
-    const [myRides, setMyRides] = useState([]);
+function DriverDashboard({ currentUser }) {
+    const [rides, setRides] = useState([]);
+    const [driverName, setDriverName] = useState('');
+    const [driverEmail, setDriverEmail] = useState(''); 
+    const navigate = useNavigate();
 
-    // 1. Fetch rides assigned to this Vehicle ID (NOW SECURE)
-    const fetchMyRides = async () => {
+    useEffect(() => {
+        let user = currentUser;
+        
+        if (!user) {
+            const userStr = localStorage.getItem('user');
+            if (userStr) user = JSON.parse(userStr);
+        }
+
+        if (!user || user.role !== 'DRIVER') {
+            alert("⚠️ Access Denied: Drivers Only.");
+            navigate('/login');
+            return;
+        }
+
+        setDriverName(user.name || "Driver");
+        setDriverEmail(user.email); 
+        
+        if (user.email) {
+            fetchRides(user.email);
+        }
+    }, [currentUser, navigate]);
+
+    const fetchRides = async (email) => {
         try {
-            // Get the token
+            console.log("Fetching rides for:", email); 
             const token = localStorage.getItem('jwtToken');
-
-            // Send Token in Header
-            const response = await axios.get(`http://localhost:8080/api/rides/driver/${vehicleId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await axios.get(`http://localhost:8080/api/rides/driver/${email}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-            setMyRides(response.data);
+            // Sort rides: Newest first!
+            const sortedRides = response.data.sort((a, b) => new Date(b.bookingTime) - new Date(a.bookingTime));
+            setRides(sortedRides);
         } catch (error) {
-            console.error(error);
-            alert("Error fetching rides (Check Vehicle ID or Login)");
+            console.error("Error loading rides:", error);
         }
     };
 
-    // 2. Mark a ride as COMPLETED (NOW SECURE)
-    const completeRide = async (rideId) => {
+    const updateStatus = async (rideId, newStatus) => {
         try {
             const token = localStorage.getItem('jwtToken');
-
-            await axios.put(`http://localhost:8080/api/rides/complete/${rideId}`, {}, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            await axios.put(`http://localhost:8080/api/rides/${rideId}/status?status=${newStatus}`, {}, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-            alert("Ride Completed! ✅");
-            fetchMyRides(); // Refresh list
+            fetchRides(driverEmail); 
         } catch (error) {
-            console.error(error);
-            alert("Error updating ride");
+            alert("Failed to update status");
         }
+    };
+
+    const handleLogout = () => {
+        localStorage.clear();
+        navigate('/login');
     };
 
     return (
-        <div style={{ maxWidth: '600px', margin: '20px auto', padding: '20px', border: '1px solid #ddd' }}>
-            <h2>🚖 Driver Dashboard</h2>
-            
-            <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-                <input 
-                    placeholder="Enter Your Vehicle ID" 
-                    value={vehicleId} 
-                    onChange={(e) => setVehicleId(e.target.value)}
-                    style={{ padding: '8px', flex: 1 }}
-                />
-                <button onClick={fetchMyRides} style={{ background: '#007bff', color: 'white', border: 'none', padding: '10px' }}>
-                    Load My Rides
-                </button>
+        <div className="dashboard-container">
+            <header className="dashboard-header">
+                <div className="header-left">
+                    <h1>🚖 Driver Console</h1>
+                    <span className="online-badge">● Online as: {driverEmail}</span>
+                </div>
+                <div className="driver-info">
+                    {/* ✅ GLOBAL REFRESH BUTTON (Always Visible) */}
+                    <button 
+                        onClick={() => fetchRides(driverEmail)} 
+                        style={{marginRight: '15px', background:'#17a2b8', color:'white', border:'none', padding:'8px 12px', borderRadius:'5px', cursor:'pointer'}}
+                    >
+                        🔄 Refresh List
+                    </button>
+                    <span>👋 {driverName}</span>
+                    <button onClick={handleLogout} className="logout-btn">Logout</button>
+                </div>
+            </header>
+
+            <div className="stats-bar">
+                <div className="stat-box">
+                    <h3>{rides.length}</h3>
+                    <p>Total Rides</p>
+                </div>
+                <div className="stat-box">
+                    <h3>₹{rides.reduce((acc, ride) => acc + (ride.status === 'COMPLETED' ? ride.price : 0), 0)}</h3>
+                    <p>Total Earnings</p>
+                </div>
             </div>
 
-            {myRides.length === 0 ? <p>No rides assigned yet.</p> : (
-                <ul style={{ listStyle: 'none', padding: 0 }}>
-                    {myRides.map(ride => (
-                        <li key={ride.id} style={{ borderBottom: '1px solid #eee', padding: '10px 0' }}>
-                            <p><strong>Passenger:</strong> {ride.userName}</p>
-                            <p><strong>Route:</strong> {ride.source} ➝ {ride.destination}</p>
-                            <p><strong>Fare:</strong> ₹{ride.price ? ride.price.toFixed(2) : '0.00'}</p>
-                            <p><strong>Status:</strong> 
-                                <span style={{ color: ride.status === 'COMPLETED' ? 'green' : 'orange', fontWeight: 'bold', marginLeft: '5px' }}>
-                                    {ride.status}
-                                </span>
-                            </p>
+            <div className="rides-grid">
+                {rides.length === 0 ? (
+                    <div className="no-rides">
+                        <h3>No rides assigned yet 💤</h3>
+                        <p>Waiting for new requests...</p>
+                    </div>
+                ) : (
+                    rides.map(ride => (
+                        <div key={ride.id} className={`ride-card ${ride.status.toLowerCase()}`}>
+                            <div className="card-header">
+                                <span className="badge">{ride.vehicleType}</span>
+                                <span className="price">₹{ride.price}</span>
+                            </div>
                             
-                            {ride.status !== 'COMPLETED' && (
-                                <button 
-                                    onClick={() => completeRide(ride.id)}
-                                    style={{ background: '#28a745', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer' }}
-                                >
-                                    ✅ Mark Complete
-                                </button>
-                            )}
-                        </li>
-                    ))}
-                </ul>
-            )}
+                            <div className="route-info">
+                                <div className="location">
+                                    <span className="dot source">🟢</span>
+                                    <strong>{ride.source}</strong>
+                                </div>
+                                <div className="location">
+                                    <span className="dot dest">🔴</span>
+                                    <strong>{ride.destination}</strong>
+                                </div>
+                            </div>
+
+                            <div className="passenger-details">
+                                <p>👤 {ride.passengerEmail}</p>
+                                <p>🕒 {new Date(ride.bookingTime).toLocaleString()}</p>
+                            </div>
+
+                            <div className="action-area">
+                                <p className="status-label">Status: <strong>{ride.status}</strong></p>
+                                
+                                {ride.status === 'BOOKED' && (
+                                    <button className="btn-accept" onClick={() => updateStatus(ride.id, 'ACCEPTED')}>
+                                        ✅ Accept Ride
+                                    </button>
+                                )}
+                                {ride.status === 'ACCEPTED' && (
+                                    <button className="btn-start" onClick={() => updateStatus(ride.id, 'ONGOING')}>
+                                        ▶️ Start Trip
+                                    </button>
+                                )}
+                                {ride.status === 'ONGOING' && (
+                                    <button className="btn-complete" onClick={() => updateStatus(ride.id, 'COMPLETED')}>
+                                        🏁 Complete Ride
+                                    </button>
+                                )}
+                                {ride.status === 'COMPLETED' && (
+                                    <button className="btn-done" disabled>Ride Finished</button>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
     );
 }

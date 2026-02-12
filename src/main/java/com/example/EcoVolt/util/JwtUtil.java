@@ -17,7 +17,7 @@ import java.util.function.Function;
 public class JwtUtil {
 
     // 1. SECRET KEY: In a real app, hide this in application.properties!
-    public static final String SECRET = "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437";
+    private String secret = "MySuperSecretKeyForEcoVoltProjectThatIsVeryLongAndSecure123";
 
     // 2. Extract Username from Token
     public String extractUsername(String token) {
@@ -34,7 +34,7 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSignKey())
                 .build()
@@ -69,7 +69,7 @@ public class JwtUtil {
     }
 
     private Key getSignKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET);
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

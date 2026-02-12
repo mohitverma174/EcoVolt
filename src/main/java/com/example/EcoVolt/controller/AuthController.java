@@ -5,11 +5,11 @@ import com.example.EcoVolt.repository.UserRepository;
 import com.example.EcoVolt.util.JwtUtil;
 import com.example.EcoVolt.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -17,55 +17,81 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+// 1. Allow React to talk to this controller
+@CrossOrigin(origins = "http://localhost:5173") 
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager; // Handles the login check
+    private AuthenticationManager authenticationManager;
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
     @Autowired
-    private JwtUtil jwtUtil; // Generates the Key
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private UserRepository userRepository;
 
-    // 1. SIGN UP (No Change)
+    // --- SIGNUP ---
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody User user) {
+    public String signup(@RequestBody User user) {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("Error: Email is already registered!");
+            throw new RuntimeException("Email already exists!");
         }
+        // Encrypt Password
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        // Default Role
+        if (user.getRole() == null) user.setRole("PASSENGER");
+        user.setRole(user.getRole().toUpperCase());
+
         userRepository.save(user);
-        return ResponseEntity.ok("User registered successfully!");
+        return "User Registered Successfully!";
     }
 
-    // 2. LOGIN (Major Update: Now returns a Token!)
+    // --- LOGIN (SAFE MODE) ---
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User loginRequest) throws Exception {
+    public Map<String, Object> createAuthenticationToken(@RequestBody User user) throws Exception {
+        System.out.println("🛑 LOGIN ATTEMPT: " + user.getEmail());
+
         try {
-            // A. Authenticate the user (Checks email & password)
+            // 1. Check User/Pass
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword())
             );
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(401).body("Incorrect username or password");
+            System.out.println("❌ Wrong Password");
+            throw new Exception("Incorrect username or password", e);
         }
 
-        // B. If Auth successful, generate the Token
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
-        final String jwt = jwtUtil.generateToken(userDetails.getUsername());
+        // 2. Load User Details safely
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        
+        // 3. Generate Token (With Error Handling)
+        String jwt = null;
+        try {
+            // Ensure this matches your JwtUtil method signature!
+            jwt = jwtUtil.generateToken(userDetails.getUsername());
+        } catch (Exception e) {
+            System.out.println("❌ JWT Generation Failed: " + e.getMessage());
+            e.printStackTrace(); // PRINT THE ERROR
+            throw new Exception("Error generating token: " + e.getMessage());
+        }
 
-        // C. Fetch the full User object to send back name/role
-        User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
+        // 4. Get User Data safely
+        User dbUser = userRepository.findByEmail(user.getEmail())
+                .orElseThrow(() -> new Exception("User found in Auth but not in DB? This should never happen."));
 
-        // D. Send both Token and User Info back to React
         Map<String, Object> response = new HashMap<>();
         response.put("token", jwt);
-        response.put("user", user);
+        response.put("name", dbUser.getName());
+        response.put("role", dbUser.getRole());
 
-        return ResponseEntity.ok(response);
+        System.out.println("✅ Login Successful. Token sent.");
+        return response;
     }
 }

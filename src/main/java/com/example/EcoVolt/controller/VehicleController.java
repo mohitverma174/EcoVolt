@@ -22,15 +22,37 @@ public class VehicleController {
         return vehicleRepository.findAll();
     }
 
-    // 2. REGISTER A NEW VEHICLE (The Dynamic Way)
-    // This replaces your old 'createVehicle' method
-    @PostMapping
-    public ResponseEntity<Vehicle> addVehicle(@RequestBody Vehicle vehicle) {
+    // 2. REGISTER A NEW VEHICLE (Updated for Smart Booking)
+    @PostMapping("/register") // ✅ Matches the previous instruction
+    public ResponseEntity<Vehicle> registerVehicle(@RequestBody Vehicle vehicle) {
+        
+        // 🛡️ Set Defaults so the RideService can find this car
+        if (vehicle.getCurrentLocation() == null) vehicle.setCurrentLocation("INDORE");
         if (vehicle.getBatteryLevel() == null) vehicle.setBatteryLevel(100);
+        if (vehicle.getMaxRangeKm() == null) vehicle.setMaxRangeKm(150.0);
+        
+        // Default Rates based on Type
+        if (vehicle.getRatePerKm() == null) {
+            if ("E-BIKE".equalsIgnoreCase(vehicle.getVehicleType())) {
+                vehicle.setRatePerKm(5.0);
+            } else if ("E-RICKSHAW".equalsIgnoreCase(vehicle.getVehicleType())) {
+                vehicle.setRatePerKm(8.0);
+            } else {
+                vehicle.setRatePerKm(15.0); // E-CAR default
+            }
+        }
+
         return ResponseEntity.ok(vehicleRepository.save(vehicle));
     }
 
-    // 3. TEST ENDPOINT (Optional - you can keep or delete this)
+    // 3. LEGACY ADD (Kept for compatibility with your previous code)
+    @PostMapping
+    public ResponseEntity<Vehicle> addVehicle(@RequestBody Vehicle vehicle) {
+        // Redirect to the smart register logic
+        return registerVehicle(vehicle);
+    }
+
+    // 4. TEST ENDPOINT (E-RICKSHAW)
     @PostMapping("/add-test-vehicle")
     public ResponseEntity<Vehicle> addTestVehicle() {
         Vehicle v = new Vehicle();
@@ -38,17 +60,21 @@ public class VehicleController {
         v.setBatteryLevel(100);
         v.setMaxRangeKm(150.0);
         v.setRatePerKm(8.0);
+        v.setCurrentLocation("INDORE"); // ✅ Added Location
+        v.setDriverEmail("driver@gmail.com"); // ✅ Added Dummy Driver
         return ResponseEntity.ok(vehicleRepository.save(v));
     }
     
-    // 4. TEST ENDPOINT E-BIKE (Optional)
+    // 5. TEST ENDPOINT (E-BIKE)
     @PostMapping("/add-ebike")
     public ResponseEntity<Vehicle> addTestEBike() {
         Vehicle v = new Vehicle();
         v.setVehicleType("E-BIKE");     
         v.setBatteryLevel(90);          
         v.setMaxRangeKm(60.0);          
-        v.setRatePerKm(5.0);            
+        v.setRatePerKm(5.0);   
+        v.setCurrentLocation("INDORE"); // ✅ Added Location
+        v.setDriverEmail("biker@gmail.com"); // ✅ Added Dummy Driver
         return ResponseEntity.ok(vehicleRepository.save(v));
     }
 }

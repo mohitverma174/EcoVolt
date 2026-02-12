@@ -31,34 +31,36 @@ public class RideService {
 
     public Ride bookRide(Ride ride, String preferredType) {
         
-        // 1. Auto-Calculate Distance
+        // 1. Calculate Distance
         double distanceKm = distanceUtil.calculateDistance(ride.getSource(), ride.getDestination());
         
-        // 2. Find Vehicle (With NULL Safety Checks)
+        // 2. Find a Matching Vehicle
         Vehicle vehicle = vehicleRepository.findAll().stream()
-            // SAFETY CHECK 1: Skip vehicles with no Type
+            // Rule 1: Must be the correct Type (Car/Bike)
             .filter(v -> v.getVehicleType() != null && v.getVehicleType().equalsIgnoreCase(preferredType))
             
-            // SAFETY CHECK 2: Skip vehicles with no Battery or Range
-            .filter(v -> v.getBatteryLevel() != null && v.getMaxRangeKm() != null)
+            // Rule 2: Must be in the SAME CITY as the passenger (The New Logic!)
+            .filter(v -> v.getCurrentLocation() != null && v.getCurrentLocation().equalsIgnoreCase(ride.getSource()))
             
-            // Logic: Check if it has enough range
+            // Rule 3: Must have enough battery/range
+            .filter(v -> v.getBatteryLevel() != null && v.getMaxRangeKm() != null)
             .filter(v -> (v.getMaxRangeKm() * v.getBatteryLevel() / 100) > distanceKm)
             
             .findFirst()
             .orElse(null);
 
+        // 3. Handle "No Driver Found"
         if (vehicle == null) {
-            throw new RuntimeException("No suitable vehicle found for " + String.format("%.2f", distanceKm) + " km. (Check Database Data)");
+            throw new RuntimeException("No drivers available in " + ride.getSource() + " right now!");
         }
 
-        // 3. Set Price
-        // Correct: Check 'vehicle' directly, not 'v'
+        // 4. Create Booking
         double rate = (vehicle.getRatePerKm() != null) ? vehicle.getRatePerKm() : 10.0;
         double totalFare = distanceKm * rate;
 
         ride.setPrice(totalFare);
         ride.setVehicleId(vehicle.getId());
+       // ride.setDriverName(vehicle.getDriverName()); // Optional: Save driver name if you added it
         ride.setBookingTime(LocalDateTime.now());
         ride.setStatus("BOOKED");
 
