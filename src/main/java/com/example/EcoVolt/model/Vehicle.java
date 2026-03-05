@@ -8,42 +8,48 @@ public class Vehicle {
     @Id
     private String id;
     
-    private String vehicleNumber;
     private String vehicleType;
+    private String vehicleNumber;
+    private String driverEmail;
+    private String driverName;
+    private String currentLocation;
     
-    // 👇 THIS WAS MISSING
-    private String driverEmail; 
+    // ✅ Changed to Objects (Double, Integer) to fix the '!= null' errors
+    private Double ratePerKm;
+    private Integer batteryLevel = 100;
+    private Double maxRangeKm; 
     
-    private String currentLocation; 
-    private Integer batteryLevel;   
-    private Double maxRangeKm;     
-    private Double ratePerKm;      
+    private String status = "AVAILABLE"; 
 
-    public Vehicle() {}
+    // --- GETTERS AND SETTERS ---
 
-    // --- Getters and Setters ---
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
-
-    public String getVehicleNumber() { return vehicleNumber; }
-    public void setVehicleNumber(String vehicleNumber) { this.vehicleNumber = vehicleNumber; }
 
     public String getVehicleType() { return vehicleType; }
     public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
 
-    // ✅ This fixes the Red Line in VehicleController
+    public String getVehicleNumber() { return vehicleNumber; }
+    public void setVehicleNumber(String vehicleNumber) { this.vehicleNumber = vehicleNumber; }
+
     public String getDriverEmail() { return driverEmail; }
     public void setDriverEmail(String driverEmail) { this.driverEmail = driverEmail; }
 
+    public String getDriverName() { return driverName; }
+    public void setDriverName(String driverName) { this.driverName = driverName; }
+
     public String getCurrentLocation() { return currentLocation; }
     public void setCurrentLocation(String currentLocation) { this.currentLocation = currentLocation; }
+
+    public Double getRatePerKm() { return ratePerKm; }
+    public void setRatePerKm(Double ratePerKm) { this.ratePerKm = ratePerKm; }
 
     public Integer getBatteryLevel() { return batteryLevel; }
     public void setBatteryLevel(Integer batteryLevel) { this.batteryLevel = batteryLevel; }
 
     public Double getMaxRangeKm() { return maxRangeKm; }
     public void setMaxRangeKm(Double maxRangeKm) { this.maxRangeKm = maxRangeKm; }
-    
-    public Double getRatePerKm() { return ratePerKm; }
-    public void setRatePerKm(Double ratePerKm) { this.ratePerKm = ratePerKm; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

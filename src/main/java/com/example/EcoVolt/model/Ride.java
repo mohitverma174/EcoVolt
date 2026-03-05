@@ -2,50 +2,31 @@ package com.example.EcoVolt.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import java.time.LocalDateTime; // ✅ Import this
+import java.time.LocalDateTime; // ✅ Changed this import
 
 @Document(collection = "rides")
 public class Ride {
     @Id
     private String id;
     
-    private String passengerEmail;
-    private String driverName;
-    private String driverEmail;
-    
-    // 👇 NEW FIELDS REQUIRED BY YOUR SERVICE
-    private String vehicleId;
-    private LocalDateTime bookingTime; 
-
     private String source;
     private String destination;
     private String vehicleType;
-    private boolean isCarpool;
-    private double price;
-    private String status;
+    private String passengerEmail;
+    
+    private String driverEmail;
+    private String driverName;
+    private String vehicleNumber;
+    private String vehicleId; // ✅ Added this field
+    private String status = "PENDING"; 
+    
+    private LocalDateTime bookingTime; // ✅ Changed from Date to LocalDateTime
+    private Double price; // ✅ Changed to Double
 
-    public Ride() {}
+    // --- GETTERS AND SETTERS ---
 
-    // Getters and Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
-    
-    public String getPassengerEmail() { return passengerEmail; }
-    public void setPassengerEmail(String passengerEmail) { this.passengerEmail = passengerEmail; }
-
-    public String getDriverName() { return driverName; }
-    public void setDriverName(String driverName) { this.driverName = driverName; }
-    
-    public String getDriverEmail() { return driverEmail; }
-    public void setDriverEmail(String driverEmail) { this.driverEmail = driverEmail; }
-
-    // ✅ Fixes "ride.setVehicleId" error
-    public String getVehicleId() { return vehicleId; }
-    public void setVehicleId(String vehicleId) { this.vehicleId = vehicleId; }
-
-    // ✅ Fixes "ride.setBookingTime" error
-    public LocalDateTime getBookingTime() { return bookingTime; }
-    public void setBookingTime(LocalDateTime bookingTime) { this.bookingTime = bookingTime; }
 
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
@@ -56,12 +37,27 @@ public class Ride {
     public String getVehicleType() { return vehicleType; }
     public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
 
-    public boolean isCarpool() { return isCarpool; }
-    public void setCarpool(boolean carpool) { isCarpool = carpool; }
+    public String getPassengerEmail() { return passengerEmail; }
+    public void setPassengerEmail(String passengerEmail) { this.passengerEmail = passengerEmail; }
 
-    public double getPrice() { return price; }
-    public void setPrice(double price) { this.price = price; }
+    public String getDriverEmail() { return driverEmail; }
+    public void setDriverEmail(String driverEmail) { this.driverEmail = driverEmail; }
+
+    public String getDriverName() { return driverName; }
+    public void setDriverName(String driverName) { this.driverName = driverName; }
+
+    public String getVehicleNumber() { return vehicleNumber; }
+    public void setVehicleNumber(String vehicleNumber) { this.vehicleNumber = vehicleNumber; }
+
+    public String getVehicleId() { return vehicleId; }
+    public void setVehicleId(String vehicleId) { this.vehicleId = vehicleId; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public LocalDateTime getBookingTime() { return bookingTime; }
+    public void setBookingTime(LocalDateTime bookingTime) { this.bookingTime = bookingTime; }
+
+    public Double getPrice() { return price; }
+    public void setPrice(Double price) { this.price = price; }
 }

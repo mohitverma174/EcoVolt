@@ -5,6 +5,7 @@ import com.example.EcoVolt.model.Vehicle;
 import com.example.EcoVolt.repository.RideRepository;
 import com.example.EcoVolt.repository.VehicleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,55 +23,77 @@ public class RideController {
     private VehicleRepository vehicleRepository; // ✅ We now talk to the Vehicles Table
     // ✅ NEW: Payment Endpoint
     @PutMapping("/{rideId}/pay")
-    public Ride payForRide(@PathVariable String rideId) {
+    public ResponseEntity<?> payForRide(@PathVariable String rideId) {
         return rideRepository.findById(rideId).map(ride -> {
-            ride.setStatus("PAID"); // Update status to PAID
-            return rideRepository.save(ride);
+            
+            // 1. Mark ride as paid
+            ride.setStatus("PAID");
+            Ride updatedRide = rideRepository.save(ride);
+
+            // 2. FREE THE VEHICLE (Find the vehicle and make it AVAILABLE again)
+            List<Vehicle> vehicles = vehicleRepository.findByDriverEmail(ride.getDriverEmail());
+            if (!vehicles.isEmpty()) {
+                Vehicle v = vehicles.get(0);
+                v.setStatus("AVAILABLE");
+                vehicleRepository.save(v);
+            }
+
+            return ResponseEntity.ok(updatedRide);
         }).orElseThrow(() -> new RuntimeException("Ride not found"));
     }
 
-    @PostMapping("/book")
-    public Ride bookRide(@RequestBody Ride rideRequest) {
+   @PostMapping("/book")
+    public ResponseEntity<?> bookRide(@RequestBody Ride rideRequest) {
         
-        System.out.println("--- 🔍 DEBUG START ---");
-        System.out.println("Looking for: City=" + rideRequest.getSource() + ", Type=" + rideRequest.getVehicleType());
+        // 1. Detect if this is a Carpool request
+        String requestedType = rideRequest.getVehicleType();
+        boolean isCarpool = false;
+        String searchType = requestedType;
 
-        // 1. PRINT ALL VEHICLES IN DB (To see what exists)
-        List<Vehicle> allVehicles = vehicleRepository.findAll();
-        System.out.println("Total Vehicles in DB: " + allVehicles.size());
-        
-        for (Vehicle v : allVehicles) {
-            System.out.println(" -> Found Car: [Location='" + v.getCurrentLocation() + "', Type='" + v.getVehicleType() + "']");
+        if (requestedType != null && requestedType.endsWith("-POOL")) {
+            isCarpool = true;
+            searchType = requestedType.replace("-POOL", ""); // Convert "E-CAR-POOL" back to "E-CAR"
         }
-        System.out.println("----------------------");
 
-        // 2. FIND THE MATCH
-        Vehicle assignedVehicle = allVehicles.stream()
-                .filter(v -> v.getCurrentLocation() != null && v.getCurrentLocation().trim().equalsIgnoreCase(rideRequest.getSource().trim())) // Added .trim() to fix spaces!
-                .filter(v -> v.getVehicleType() != null && v.getVehicleType().equalsIgnoreCase(rideRequest.getVehicleType()))
-                .findFirst()
-                .orElse(null);
+        // 2. Search for an AVAILABLE vehicle using the base type (e.g., E-CAR)
+        List<Vehicle> availableVehicles = vehicleRepository
+            .findByCurrentLocationIgnoreCaseAndVehicleTypeIgnoreCaseAndStatusIgnoreCase(
+                rideRequest.getSource(), 
+                searchType, 
+                "AVAILABLE"
+            );
 
-        // ... rest of your code (Logic 2: Assign Driver) ...
-        if (assignedVehicle != null) {
-             System.out.println("✅ MATCH FOUND! Vehicle ID: " + assignedVehicle.getId());
-             rideRequest.setDriverEmail(assignedVehicle.getDriverEmail());
-             rideRequest.setDriverName("Verified Driver");
-             rideRequest.setVehicleId(assignedVehicle.getId());
-             
-             // Price Logic
-             double rate = (assignedVehicle.getRatePerKm() != null) ? assignedVehicle.getRatePerKm() : 15.0;
-             rideRequest.setPrice(10.0 * rate); // Mock distance
-             rideRequest.setStatus("BOOKED");
+        if (availableVehicles.isEmpty()) {
+            return ResponseEntity.status(404).body("Sorry, no " + searchType + "s are currently available in " + rideRequest.getSource());
+        }
+
+        // 3. Assign the vehicle
+        Vehicle assignedVehicle = availableVehicles.get(0);
+
+        rideRequest.setDriverEmail(assignedVehicle.getDriverEmail());
+        rideRequest.setDriverName(assignedVehicle.getDriverName());
+        rideRequest.setVehicleNumber(assignedVehicle.getVehicleNumber());
+        rideRequest.setVehicleId(assignedVehicle.getId());
+        rideRequest.setStatus("ACCEPTED");
+        rideRequest.setBookingTime(java.time.LocalDateTime.now());
+        
+        // 4. 💸 Apply Pricing Logic (Discount for Carpool!)
+        if (isCarpool) {
+            rideRequest.setPrice(90.0); // 40% discount for sharing!
+            rideRequest.setVehicleType(searchType + " (Shared)"); // Make it look nice on UI
         } else {
-             System.out.println("❌ NO MATCH. Assigning Bot.");
-             rideRequest.setDriverName("EcoVolt Bot");
-             rideRequest.setDriverEmail("bot@ecovolt.com");
-             rideRequest.setPrice(50.0);
-             rideRequest.setStatus("WAITING");
+            rideRequest.setPrice(150.0); // Standard full price
+            rideRequest.setVehicleType(searchType); 
         }
 
-        return rideRepository.save(rideRequest);
+        // 5. Lock the vehicle
+        assignedVehicle.setStatus("BUSY");
+        vehicleRepository.save(assignedVehicle);
+
+        // 6. Save the ride
+        Ride savedRide = rideRepository.save(rideRequest);
+
+        return ResponseEntity.ok(savedRide);
     }
     
     @GetMapping("/user/{email}")
@@ -94,5 +117,22 @@ public class RideController {
         Ride ride = rideRepository.findById(id).orElseThrow(() -> new RuntimeException("Ride not found"));
         ride.setStatus(status.toUpperCase());
         return rideRepository.save(ride);
+    }
+    // 🏁 NEW: Driver completes the ride
+   @PutMapping("/{rideId}/complete")
+    public ResponseEntity<?> completeRide(@PathVariable String rideId) {
+        return rideRepository.findById(rideId).map(ride -> {
+            
+            ride.setStatus("COMPLETED");
+            
+            // Only set default price IF it wasn't already set during booking
+            if (ride.getPrice() == null || ride.getPrice() == 0.0) {
+                ride.setPrice(150.0); 
+            }
+            
+            Ride updatedRide = rideRepository.save(ride);
+            return ResponseEntity.ok(updatedRide);
+
+        }).orElseThrow(() -> new RuntimeException("Ride not found"));
     }
 }

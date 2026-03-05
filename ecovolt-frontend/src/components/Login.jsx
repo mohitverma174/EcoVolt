@@ -1,75 +1,139 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
-function Login({ onLoginSuccess, onSwitchToSignup }) {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+function Login({ onLogin }) {
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({ email: '', password: '' });
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = async (e) => {
+    // Dynamic Toast State
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000); 
+    };
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+   const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+
         try {
-            // 1. Call API
-            const response = await axios.post('http://localhost:8080/api/auth/login', { email, password });
+            const response = await axios.post('http://localhost:8080/api/auth/login', formData);
             
-            console.log("Server Login Response:", response.data);
+            // 🔍 DEBUG: See exactly what Java is sending back in the browser console
+            console.log("Backend Response:", response.data); 
 
-            // 2. Extract Data 
-            // If the server doesn't send the email back, WE USE THE INPUT EMAIL
-            const userData = {
-                name: response.data.name || "Driver",
-                role: response.data.role,
-                email: email, // 👈 FORCE SAVE THE EMAIL FROM INPUT
-                token: response.data.token
-            };
+            // 1. Safely grab the token (handles both {token: "..."} and raw "eyJ..." string)
+            const token = response.data.token || response.data;
+            localStorage.setItem('jwtToken', token);
+            
+            // 🚨 2. THE FIX: If Java didn't send a user object, we will build a temporary one!
+            let userData = response.data.user;
+            
+            if (!userData) {
+                console.warn("Java didn't send user details. Building a fallback profile.");
+                // Temporary fallback so you don't get stuck on the login screen
+                userData = { 
+                    email: formData.email, 
+                    name: "EcoVolt User",
+                    // Hack: If the email has 'driver' in it, make them a driver, else passenger
+                    role: formData.email.toLowerCase().includes('driver') ? 'DRIVER' : 'PASSENGER' 
+                };
+            }
 
-            // 3. Save to Local Storage (Crucial)
-            localStorage.setItem('jwtToken', response.data.token);
+            // 3. Save to local storage
             localStorage.setItem('user', JSON.stringify(userData));
+            
+            // 4. Tell App.jsx that we are officially logged in
+            if (onLogin) {
+                onLogin(userData);
+            }
 
-            // 4. Update App State
-            alert(`✅ Login Successful! Welcome ${userData.name}`);
-            onLoginSuccess(userData); 
+            // 5. Success Toast & Redirect
+            showToast("Welcome back!", 'success');
+            navigate('/dashboard');
 
         } catch (error) {
             console.error("Login Error:", error);
-            alert("❌ Login Failed: check email/password");
+            showToast("Invalid email or password. Please try again.", 'error');
+            setLoading(false);
         }
     };
 
     return (
-        <div style={{
-            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-            backgroundColor: '#f0f2f5', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
-        }}>
-            <div style={{ width: '100%', maxWidth: '400px', padding: '30px', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#333' }}>🔐 Login</h2>
-                
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <input 
-                        type="email" 
-                        placeholder="Enter Email"
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)} 
-                        required 
-                        style={{ padding: '12px', borderRadius: '5px', border: '1px solid #ccc' }} 
-                    />
-                    <input 
-                        type="password" 
-                        placeholder="Enter Password"
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        required 
-                        style={{ padding: '12px', borderRadius: '5px', border: '1px solid #ccc' }} 
-                    />
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f4f7f6', position: 'relative' }}>
+            
+            {toast.show && (
+                <div style={{
+                    position: 'absolute', top: '40px', left: '50%', transform: 'translateX(-50%)',
+                    background: toast.type === 'error' ? '#ff4757' : '#2ed573',
+                    color: 'white', padding: '15px 30px', borderRadius: '30px',
+                    boxShadow: '0 10px 20px rgba(0,0,0,0.15)', zIndex: 9999,
+                    fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px',
+                    transition: 'all 0.3s ease-in-out'
+                }}>
+                    {toast.type === 'error' ? '❌' : '✅'} {toast.message}
+                </div>
+            )}
+
+            <div style={{ background: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', width: '100%', maxWidth: '400px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <h1 style={{ color: '#28a745', margin: '0 0 10px 0' }}>🌱 EcoVolt</h1>
+                    <h2 style={{ color: '#333', margin: 0 }}>Welcome Back</h2>
+                    <p style={{ color: '#777', marginTop: '5px' }}>Log in to continue your journey.</p>
+                </div>
+
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     
-                    <button type="submit" style={{ background: '#28a745', color: 'white', padding: '12px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-                        Login
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontWeight: 'bold', color: '#555', marginBottom: '5px' }}>Email Address</label>
+                        <input 
+                            type="email" 
+                            name="email" 
+                            placeholder="e.g. example@ecovolt.com" 
+                            value={formData.email} 
+                            onChange={handleChange} 
+                            required 
+                            style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' }}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontWeight: 'bold', color: '#555', marginBottom: '5px' }}>Password</label>
+                        <input 
+                            type="password" 
+                            name="password" 
+                            placeholder="••••••••" 
+                            value={formData.password} 
+                            onChange={handleChange} 
+                            required 
+                            style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' }}
+                        />
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        style={{ 
+                            background: '#28a745', color: 'white', padding: '15px', 
+                            borderRadius: '8px', border: 'none', fontSize: '18px', 
+                            fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', 
+                            marginTop: '10px', transition: '0.3s' 
+                        }}
+                    >
+                        {loading ? "Authenticating..." : "Log In"}
                     </button>
                 </form>
-                
-                <p style={{ textAlign: 'center', marginTop: '15px' }}>
-                    New user? <span onClick={onSwitchToSignup} style={{ color: '#007bff', cursor: 'pointer', textDecoration: 'underline' }}>Create Account</span>
-                </p>
+
+                <div style={{ textAlign: 'center', marginTop: '25px', color: '#666' }}>
+                    Don't have an account? <Link to="/signup" style={{ color: '#28a745', fontWeight: 'bold', textDecoration: 'none' }}>Sign Up</Link>
+                </div>
             </div>
         </div>
     );

@@ -13,10 +13,20 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:5173")
 public class VehicleController {
 
+
+    // 1. GET ALL VEHICLES
     @Autowired
     private VehicleRepository vehicleRepository;
 
-    // 1. GET ALL VEHICLES
+    // ✅ ADD THIS: Check if a driver already has a registered vehicle
+    @GetMapping("/driver/{email}")
+    public ResponseEntity<?> getVehicleByDriver(@PathVariable String email) {
+        List<Vehicle> vehicles = vehicleRepository.findByDriverEmail(email);
+        if (vehicles.isEmpty()) {
+            return ResponseEntity.status(404).body("No vehicle found");
+        }
+        return ResponseEntity.ok(vehicles.get(0));
+    }
     @GetMapping
     public List<Vehicle> getAllVehicles() {
         return vehicleRepository.findAll();

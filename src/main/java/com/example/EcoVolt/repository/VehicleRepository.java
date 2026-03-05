@@ -10,6 +10,12 @@ public interface VehicleRepository extends MongoRepository<Vehicle, String> {
     // Standard methods
     List<Vehicle> findByVehicleType(String vehicleType);
     List<Vehicle> findByBatteryLevelGreaterThan(int level);
+    List<Vehicle> findByDriverEmail(String driverEmail);
+    List<Vehicle> findByCurrentLocationIgnoreCaseAndVehicleTypeIgnoreCaseAndStatusIgnoreCase(
+        String currentLocation, 
+        String vehicleType, 
+        String status
+    );
 
     // ✅ THIS IS THE METHOD YOU WERE MISSING
     @Aggregation(pipeline = { "{ '$group': { '_id': '$currentLocation' } }" })
