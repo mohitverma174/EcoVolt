@@ -41,7 +41,7 @@ function BookingForm({ currentUser }) {
             const token = localStorage.getItem('jwtToken');
 
             // 3. SEND REQUEST (After delay)
-            const response = await axios.post('http://localhost:8080/api/rides/book', formData, {
+            const response = await axios.post('https://ecovolt-r0js.onrender.com/api/rides/book', formData, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

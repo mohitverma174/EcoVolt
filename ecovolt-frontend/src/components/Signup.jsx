@@ -28,7 +28,7 @@ function Signup() {
         setLoading(true);
 
         try {
-            await axios.post('http://localhost:8080/api/auth/signup', formData);
+            await axios.post('https://ecovolt-r0js.onrender.com/api/auth/signup', formData);
             
             showToast('Account created successfully! Redirecting...', 'success');
             

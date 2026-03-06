@@ -22,7 +22,7 @@ function Login({ onLogin }) {
         setLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:8080/api/auth/login', formData);
+            const response = await axios.post('https://ecovolt-r0js.onrender.com/api/auth/login', formData);
             
             console.log("Backend Response:", response.data); 
 

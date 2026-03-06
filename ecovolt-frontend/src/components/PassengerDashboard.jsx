@@ -31,7 +31,7 @@ function PassengerDashboard({ currentUser, onLogout }) {
         let savedEmail = currentUser?.email || JSON.parse(localStorage.getItem('user') || '{}').email;
         if (savedEmail) fetchMyRides(savedEmail);
 
-        axios.get('http://localhost:8080/api/vehicles/locations')
+        axios.get('https://ecovolt-r0js.onrender.com/api/vehicles/locations')
             .then(res => {
                 if(res.data) setAllCities([...new Set(res.data.filter(c => c).map(c => c.toUpperCase()))]); 
             })
@@ -44,7 +44,7 @@ function PassengerDashboard({ currentUser, onLogout }) {
 
         try {
             const token = localStorage.getItem('jwtToken');
-            const response = await axios.get(`http://localhost:8080/api/rides/passenger/${email}`, {
+            const response = await axios.get(`https://ecovolt-r0js.onrender.com/api/rides/passenger/${email}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             setRides(response.data.sort((a, b) => new Date(b.bookingTime) - new Date(a.bookingTime)));
@@ -60,7 +60,7 @@ function PassengerDashboard({ currentUser, onLogout }) {
     const processPayment = async () => {
         try {
             const token = localStorage.getItem('jwtToken');
-            await axios.put(`http://localhost:8080/api/rides/${paymentModal.rideId}/pay`, {}, {
+            await axios.put(`https://ecovolt-r0js.onrender.com/api/rides/${paymentModal.rideId}/pay`, {}, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -89,7 +89,7 @@ function PassengerDashboard({ currentUser, onLogout }) {
             const finalVehicleType = formData.isCarpool ? `${formData.vehicleType}-POOL` : formData.vehicleType;
             const rideData = { ...formData, vehicleType: finalVehicleType, passengerEmail: currentUser.email };
             
-            const response = await axios.post('http://localhost:8080/api/rides/book', rideData, {
+            const response = await axios.post('https://ecovolt-r0js.onrender.com/api/rides/book', rideData, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

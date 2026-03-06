@@ -43,7 +43,7 @@ function RegisterVehicle({ currentUser }) {
                 driverEmail: email
             };
 
-            await axios.post('http://localhost:8080/api/vehicles/register', payload, {
+            await axios.post('https://ecovolt-r0js.onrender.com/api/vehicles/register', payload, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

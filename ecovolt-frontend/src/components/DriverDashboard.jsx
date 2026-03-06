@@ -24,14 +24,14 @@ function DriverDashboard({ currentUser, onLogout }) {
                 const headers = { 'Authorization': `Bearer ${token}` };
                 
                 try {
-                    const vehicleRes = await axios.get(`http://localhost:8080/api/vehicles/driver/${email}`, { headers });
+                    const vehicleRes = await axios.get(`https://ecovolt-r0js.onrender.com/api/vehicles/driver/${email}`, { headers });
                     setMyVehicle(vehicleRes.data);
                 } catch (err) {
                     console.log("No vehicle found.");
                 }
 
                 try {
-                    const ridesRes = await axios.get(`http://localhost:8080/api/rides/driver/${email}`, { headers });
+                    const ridesRes = await axios.get(`https://ecovolt-r0js.onrender.com/api/rides/driver/${email}`, { headers });
                     setRides(ridesRes.data.sort((a, b) => new Date(b.bookingTime) - new Date(a.bookingTime)));
                 } catch (err) {
                     console.log("No rides found.");
@@ -49,7 +49,7 @@ function DriverDashboard({ currentUser, onLogout }) {
     const handleCompleteRide = async (rideId) => {
         try {
             const token = localStorage.getItem('jwtToken');
-            await axios.put(`http://localhost:8080/api/rides/${rideId}/complete`, {}, {
+            await axios.put(`https://ecovolt-r0js.onrender.com/api/rides/${rideId}/complete`, {}, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -58,10 +58,10 @@ function DriverDashboard({ currentUser, onLogout }) {
             const email = currentUser?.email || JSON.parse(localStorage.getItem('user') || '{}').email;
             const headers = { 'Authorization': `Bearer ${token}` };
             
-            const ridesRes = await axios.get(`http://localhost:8080/api/rides/driver/${email}`, { headers });
+            const ridesRes = await axios.get(`https://ecovolt-r0js.onrender.com/api/rides/driver/${email}`, { headers });
             setRides(ridesRes.data.sort((a, b) => new Date(b.bookingTime) - new Date(a.bookingTime)));
 
-            const vehicleRes = await axios.get(`http://localhost:8080/api/vehicles/driver/${email}`, { headers });
+            const vehicleRes = await axios.get(`https://ecovolt-r0js.onrender.com/api/vehicles/driver/${email}`, { headers });
             setMyVehicle(vehicleRes.data);
 
         } catch (error) {
