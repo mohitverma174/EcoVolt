@@ -70,10 +70,16 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
+   @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // Trust your React App
+        
+        // 🌟 THE FIX: Added your Vercel URL alongside localhost!
+        configuration.setAllowedOrigins(List.of(
+            "http://localhost:5173", 
+            "https://eco-volt-ruby.vercel.app"
+        )); 
+        
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
