@@ -6,8 +6,6 @@ function Login({ onLogin }) {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [loading, setLoading] = useState(false);
-
-    // Dynamic Toast State
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     const showToast = (message, type = 'success') => {
@@ -26,36 +24,28 @@ function Login({ onLogin }) {
         try {
             const response = await axios.post('http://localhost:8080/api/auth/login', formData);
             
-            // 🔍 DEBUG: See exactly what Java is sending back in the browser console
             console.log("Backend Response:", response.data); 
 
-            // 1. Safely grab the token (handles both {token: "..."} and raw "eyJ..." string)
             const token = response.data.token || response.data;
             localStorage.setItem('jwtToken', token);
             
-            // 🚨 2. THE FIX: If Java didn't send a user object, we will build a temporary one!
             let userData = response.data.user;
             
             if (!userData) {
                 console.warn("Java didn't send user details. Building a fallback profile.");
-                // Temporary fallback so you don't get stuck on the login screen
                 userData = { 
                     email: formData.email, 
                     name: "EcoVolt User",
-                    // Hack: If the email has 'driver' in it, make them a driver, else passenger
                     role: formData.email.toLowerCase().includes('driver') ? 'DRIVER' : 'PASSENGER' 
                 };
             }
 
-            // 3. Save to local storage
             localStorage.setItem('user', JSON.stringify(userData));
             
-            // 4. Tell App.jsx that we are officially logged in
             if (onLogin) {
                 onLogin(userData);
             }
 
-            // 5. Success Toast & Redirect
             showToast("Welcome back!", 'success');
             navigate('/dashboard');
 

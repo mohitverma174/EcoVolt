@@ -12,12 +12,10 @@ function Signup() {
     });
     const [loading, setLoading] = useState(false);
 
-    // 🌟 NEW: Dynamic Toast State (No more alerts!)
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
-        // Automatically hide after 3 seconds
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000); 
     };
 
@@ -30,13 +28,10 @@ function Signup() {
         setLoading(true);
 
         try {
-            // Call your Spring Boot signup API
             await axios.post('http://localhost:8080/api/auth/signup', formData);
             
-            // 🌟 Smooth Success Toast
             showToast('Account created successfully! Redirecting...', 'success');
             
-            // Wait 1.5 seconds so they can see the success message before jumping to login
             setTimeout(() => {
                 navigate('/login'); 
             }, 1500);
@@ -45,7 +40,7 @@ function Signup() {
             console.error("Signup Error:", error);
             const errorMsg = error.response?.data?.message || "Signup failed. Please try again.";
             
-            // 🌟 Smooth Error Toast
+            
             showToast(errorMsg, 'error');
             setLoading(false);
         }
@@ -57,7 +52,6 @@ function Signup() {
             backgroundColor: '#f8fdf9', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
         }}>
             
-            {/* 🌟 DYNAMIC TOAST NOTIFICATION */}
             {toast.show && (
                 <div style={{
                     position: 'absolute', top: '40px', left: '50%', transform: 'translateX(-50%)',

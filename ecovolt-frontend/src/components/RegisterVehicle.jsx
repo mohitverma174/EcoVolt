@@ -2,129 +2,150 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-// ✅ ADDED: Accept currentUser as a prop so we know who is registering!
 function RegisterVehicle({ currentUser }) {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        vehicleType: 'E-RICKSHAW',
-        batteryLevel: 100,
-        maxRangeKm: 150,
-        ratePerKm: 8.0,
-        currentLocation: '',
-        vehicleNumber: '' // Added this so you can track your specific car
+        vehicleType: 'E-CAR',
+        vehicleNumber: '',
+        currentLocation: ''
     });
-    const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    // 🌟 DYNAMIC TOAST STATE
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+    const showToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000); 
+    };
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        // Automatically uppercase the license plate and city for consistency
+        setFormData({ ...formData, [e.target.name]: e.target.value.toUpperCase() });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+
         try {
-            // 1. Get the Token from Local Storage
-            const token = localStorage.getItem('jwtToken'); 
-            
-            // 🌟 2. CRUCIAL: Attach the driver's email and name to the car!
-            const vehicleData = {
+            const token = localStorage.getItem('jwtToken');
+            const email = currentUser?.email || JSON.parse(localStorage.getItem('user') || '{}').email;
+
+            if (!email) {
+                showToast("Error: User email not found. Please log in again.", 'error');
+                setLoading(false);
+                return;
+            }
+
+            const payload = {
                 ...formData,
-                driverEmail: currentUser?.email,
-                driverName: currentUser?.name,
-                status: 'AVAILABLE'
+                driverEmail: email
             };
-            
-            // 3. Send Data + Token
-            await axios.post('http://localhost:8080/api/vehicles', vehicleData, {
-                headers: {
-                    'Authorization': `Bearer ${token}` 
-                }
+
+            await axios.post('http://localhost:8080/api/vehicles/register', payload, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            alert('✅ Vehicle Registered Successfully! 🚗');
-            navigate('/dashboard'); // Go back to the dashboard after success
+            // 🌟 Smooth Success Toast (Replaces the alert!)
+            showToast("EV Registered Successfully! Booting up dashboard...", 'success');
+            
+            // Wait 1.5 seconds so they can read the toast before teleporting
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, 1500);
 
         } catch (error) {
-            console.error(error);
-            setMessage('❌ Registration Failed: ' + (error.response?.status === 403 ? "Permission Denied (Check Token)" : "Server Error"));
+            console.error("Registration Error:", error);
+            // 🌟 Smooth Error Toast
+            showToast("Failed to register vehicle. It might already exist.", 'error');
+            setLoading(false);
         }
     };
 
     return (
-        <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px', maxWidth: '400px', margin: '50px auto', backgroundColor: 'white' }}>
-            <h3 style={{ textAlign: 'center', color: '#28a745' }}>🚖 Register Your EV</h3>
+        <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '50px', position: 'relative' }}>
             
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ fontWeight: 'bold', marginBottom: '5px' }}>Vehicle Type</label>
-                    <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}>
-                        <option value="E-RICKSHAW">E-Rickshaw</option>
-                        <option value="E-BIKE">E-Bike</option>
-                        <option value="E-CAR">E-Car</option>
-                    </select>
+            {/* 🌟 DYNAMIC TOAST NOTIFICATION */}
+            {toast.show && (
+                <div style={{
+                    position: 'fixed', top: '40px', left: '50%', transform: 'translateX(-50%)',
+                    background: toast.type === 'error' ? '#ff4757' : '#2ed573',
+                    color: 'white', padding: '15px 30px', borderRadius: '30px',
+                    boxShadow: '0 10px 20px rgba(0,0,0,0.15)', zIndex: 9999,
+                    fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px',
+                    transition: 'all 0.3s ease-in-out'
+                }}>
+                    {toast.type === 'error' ? '❌' : '✅'} {toast.message}
+                </div>
+            )}
+
+            <div style={{ background: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', width: '100%', maxWidth: '500px', borderTop: '5px solid #0fb9b1' }}>
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <h1 style={{ color: '#1e272e', margin: '0 0 10px 0', fontSize: '28px' }}>🚗 Add Your EV</h1>
+                    <p style={{ color: '#576574', margin: 0, fontSize: '15px' }}>Register your vehicle to start receiving rides on EcoVolt.</p>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ fontWeight: 'bold', marginBottom: '5px' }}>Vehicle Number</label>
-                    <input 
-                        type="text" 
-                        name="vehicleNumber" 
-                        placeholder="e.g. MP09 EV 1234"
-                        value={formData.vehicleNumber} 
-                        onChange={handleChange} 
-                        required 
-                        style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
-                    />
-                </div>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontWeight: 'bold', color: '#34495e', marginBottom: '8px', fontSize: '14px' }}>Vehicle Category</label>
+                        <select 
+                            name="vehicleType" 
+                            value={formData.vehicleType} 
+                            onChange={handleChange} 
+                            style={{ padding: '12px', borderRadius: '8px', border: '1px solid #d2dae2', fontSize: '16px', backgroundColor: '#f8f9fa' }}
+                        >
+                            <option value="E-CAR">E-Car (Premium 4-Seater)</option>
+                            <option value="E-BIKE">E-Bike (Fast 1-Seater)</option>
+                            <option value="E-RICKSHAW">E-Rickshaw (Economy)</option>
+                        </select>
+                    </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ fontWeight: 'bold', marginBottom: '5px' }}>Current City</label>
-                    {/* ✅ FIXED: Moved this outside of the button! */}
-                    <input 
-                        type="text" 
-                        name="currentLocation"
-                        placeholder="e.g. INDORE" 
-                        value={formData.currentLocation} 
-                        onChange={handleChange} 
-                        required 
-                        style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc', textTransform: 'uppercase' }}
-                    />
-                </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontWeight: 'bold', color: '#34495e', marginBottom: '8px', fontSize: '14px' }}>License Plate Number</label>
+                        <input 
+                            type="text" 
+                            name="vehicleNumber" 
+                            placeholder="e.g., MP09-EV-1234" 
+                            value={formData.vehicleNumber} 
+                            onChange={handleChange} 
+                            required 
+                            style={{ padding: '12px', borderRadius: '8px', border: '1px solid #d2dae2', fontSize: '16px' }}
+                        />
+                    </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ fontWeight: 'bold', marginBottom: '5px' }}>Max Range (km)</label>
-                    <input 
-                        type="number" 
-                        name="maxRangeKm" 
-                        value={formData.maxRangeKm} 
-                        onChange={handleChange} 
-                        required 
-                        style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
-                    />
-                </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ fontWeight: 'bold', color: '#34495e', marginBottom: '8px', fontSize: '14px' }}>Current City (Base Location)</label>
+                        <input 
+                            type="text" 
+                            name="currentLocation" 
+                            placeholder="e.g., INDORE" 
+                            value={formData.currentLocation} 
+                            onChange={handleChange} 
+                            required 
+                            style={{ padding: '12px', borderRadius: '8px', border: '1px solid #d2dae2', fontSize: '16px' }}
+                        />
+                    </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ fontWeight: 'bold', marginBottom: '5px' }}>Rate per KM (₹)</label>
-                    <input 
-                        type="number" 
-                        name="ratePerKm" 
-                        value={formData.ratePerKm} 
-                        onChange={handleChange} 
-                        required 
-                        style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
-                    />
-                </div>
-
-                <button type="submit" style={{ background: '#28a745', color: 'white', padding: '12px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '10px' }}>
-                    Register Vehicle
-                </button>
-                
-                <button type="button" onClick={() => navigate('/dashboard')} style={{ background: '#f8f9fa', color: '#333', padding: '10px', border: '1px solid #ccc', borderRadius: '5px', cursor: 'pointer' }}>
-                    Cancel
-                </button>
-            </form>
-            
-            {message && <p style={{ marginTop: '15px', fontWeight: 'bold', color: 'red', textAlign: 'center' }}>{message}</p>}
+                    <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+                        <button 
+                            type="button" 
+                            onClick={() => navigate('/dashboard')}
+                            style={{ flex: 1, background: '#f1f2f6', color: '#57606f', padding: '15px', borderRadius: '8px', border: 'none', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            style={{ flex: 2, background: '#0fb9b1', color: 'white', padding: '15px', borderRadius: '8px', border: 'none', fontSize: '16px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 15px rgba(15, 185, 177, 0.3)' }}
+                        >
+                            {loading ? "Registering..." : "Activate My EV"}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }

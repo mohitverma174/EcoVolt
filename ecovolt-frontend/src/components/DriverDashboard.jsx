@@ -7,11 +7,8 @@ function DriverDashboard({ currentUser, onLogout }) {
     const [myVehicle, setMyVehicle] = useState(null);
     const [rides, setRides] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // 🌟 NEW: Dynamic Toast State
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-    // 🌟 Helper function to trigger beautiful notifications
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500); 
@@ -56,7 +53,6 @@ function DriverDashboard({ currentUser, onLogout }) {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            // 🌟 Replaced window.alert with smooth Toast!
             showToast("Trip Finished! Passenger will be notified to pay.", 'success');
             
             const email = currentUser?.email || JSON.parse(localStorage.getItem('user') || '{}').email;
@@ -69,17 +65,22 @@ function DriverDashboard({ currentUser, onLogout }) {
             setMyVehicle(vehicleRes.data);
 
         } catch (error) {
-            // 🌟 Replaced window.alert with error Toast!
             showToast("Failed to complete the ride.", 'error');
         }
     };
+
+    // 🌟 NEW MATH: Calculate Total Earnings and Completed Rides
+    // We only count rides that are COMPLETED or PAID.
+    // If your backend ride object doesn't have a 'price' field yet, we default to 150 per ride.
+    const completedRides = rides.filter(ride => ride.status === 'COMPLETED' || ride.status === 'PAID');
+    const totalRidesCount = completedRides.length;
+    const totalEarnings = completedRides.reduce((sum, ride) => sum + (ride.price || 150), 0);
 
     if (loading) return <div style={{ textAlign: 'center', padding: '50px', fontSize: '20px', color: '#555' }}>Loading Driver Console... 🚙</div>;
 
     return (
         <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', paddingBottom: '50px', position: 'relative' }}>
             
-            {/* 🌟 DYNAMIC TOAST NOTIFICATION */}
             {toast.show && (
                 <div style={{
                     position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
@@ -123,26 +124,41 @@ function DriverDashboard({ currentUser, onLogout }) {
                         </button>
                     </div>
                 ) : (
-                    <div style={{ background: 'white', borderRadius: '15px', padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', borderLeft: `8px solid ${myVehicle.status === 'AVAILABLE' ? '#0fb9b1' : '#f39c12'}` }}>
-                        <div>
-                            <h2 style={{ margin: '0 0 5px 0', color: '#1e272e' }}>{myVehicle.vehicleType} <span style={{ color: '#808e9b', fontSize: '16px' }}>({myVehicle.vehicleNumber})</span></h2>
-                            <p style={{ margin: 0, color: '#576574', fontSize: '15px' }}>📍 City: <strong>{myVehicle.currentLocation}</strong></p>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ 
-                                background: myVehicle.status === 'AVAILABLE' ? '#e0f7fa' : '#fff3e0', 
-                                color: myVehicle.status === 'AVAILABLE' ? '#00838f' : '#e65100',
-                                padding: '10px 20px', 
-                                borderRadius: '30px', 
-                                fontWeight: '900',
-                                fontSize: '16px',
-                                display: 'inline-block',
-                                border: `1px solid ${myVehicle.status === 'AVAILABLE' ? '#b2ebf2' : '#ffe0b2'}`
-                            }}>
-                                {myVehicle.status === 'AVAILABLE' ? '🟢 AVAILABLE' : '🔴 BUSY'}
+                    <>
+                        {/* ✅ ACTIVE VEHICLE STATUS CARD */}
+                        <div style={{ background: 'white', borderRadius: '15px', padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', borderLeft: `8px solid ${myVehicle.status === 'AVAILABLE' ? '#0fb9b1' : '#f39c12'}` }}>
+                            <div>
+                                <h2 style={{ margin: '0 0 5px 0', color: '#1e272e' }}>{myVehicle.vehicleType} <span style={{ color: '#808e9b', fontSize: '16px' }}>({myVehicle.vehicleNumber})</span></h2>
+                                <p style={{ margin: 0, color: '#576574', fontSize: '15px' }}>📍 City: <strong>{myVehicle.currentLocation}</strong></p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ 
+                                    background: myVehicle.status === 'AVAILABLE' ? '#e0f7fa' : '#fff3e0', 
+                                    color: myVehicle.status === 'AVAILABLE' ? '#00838f' : '#e65100',
+                                    padding: '10px 20px', 
+                                    borderRadius: '30px', 
+                                    fontWeight: '900',
+                                    fontSize: '16px',
+                                    display: 'inline-block',
+                                    border: `1px solid ${myVehicle.status === 'AVAILABLE' ? '#b2ebf2' : '#ffe0b2'}`
+                                }}>
+                                    {myVehicle.status === 'AVAILABLE' ? '🟢 AVAILABLE' : '🔴 BUSY'}
+                                </div>
                             </div>
                         </div>
-                    </div>
+
+                        {/* 🌟 NEW: EARNINGS & STATS ROW */}
+                        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+                            <div style={{ flex: 1, background: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', borderTop: '4px solid #3498db' }}>
+                                <p style={{ margin: 0, color: '#808e9b', fontWeight: 'bold', fontSize: '14px', textTransform: 'uppercase' }}>Total Trips</p>
+                                <h2 style={{ margin: '5px 0 0 0', color: '#1e272e', fontSize: '32px' }}>🚗 {totalRidesCount}</h2>
+                            </div>
+                            <div style={{ flex: 1, background: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', borderTop: '4px solid #2ecc71' }}>
+                                <p style={{ margin: 0, color: '#808e9b', fontWeight: 'bold', fontSize: '14px', textTransform: 'uppercase' }}>Total Earnings</p>
+                                <h2 style={{ margin: '5px 0 0 0', color: '#1e272e', fontSize: '32px' }}>₹{totalEarnings}</h2>
+                            </div>
+                        </div>
+                    </>
                 )}
 
                 <div style={{ marginTop: '40px' }}>

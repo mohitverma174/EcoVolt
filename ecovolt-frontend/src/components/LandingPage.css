@@ -1,12 +1,12 @@
-/* --- Global Landing Page Styles --- */
+
 .landing-container {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #333;
-    background-color: #f8fdf9; /* Very light green tint */
+    background-color: #f8fdf9; 
     min-height: 100vh;
 }
 
-/* --- Navbar --- */
+
 .landing-nav {
     display: flex;
     justify-content: space-between;
@@ -166,9 +166,7 @@
     border: 1px solid #eef7f0;
 }
 
-/* =========================================
-   📱 MOBILE RESPONSIVENESS (The Magic)
-   ========================================= */
+
 @media (max-width: 768px) {
     .hero-section {
         flex-direction: column-reverse; /* Puts image above text on phones */
