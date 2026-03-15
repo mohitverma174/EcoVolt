@@ -17,7 +17,7 @@ public interface VehicleRepository extends MongoRepository<Vehicle, String> {
         String status
     );
 
-    // ✅ THIS IS THE METHOD YOU WERE MISSING
+    
     @Aggregation(pipeline = { "{ '$group': { '_id': '$currentLocation' } }" })
     List<String> findDistinctCurrentLocation();
 }

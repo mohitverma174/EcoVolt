@@ -23,8 +23,39 @@ function Signup() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const validatePassword = (password) => {
+        if (password.length < 8) return "Password must be at least 8 characters long.";
+        if (!/[A-Z]/.test(password)) return "Password must contain an uppercase letter.";
+        if (!/[a-z]/.test(password)) return "Password must contain a lowercase letter.";
+        if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return "Password must contain a special character (!@#$%).";
+
+        // 🛑 Block continuous numbers (e.g., 123, 234, 987)
+        for (let i = 0; i < password.length - 2; i++) {
+            const num1 = parseInt(password[i]);
+            const num2 = parseInt(password[i+1]);
+            const num3 = parseInt(password[i+2]);
+            
+            // If all three characters are numbers
+            if (!isNaN(num1) && !isNaN(num2) && !isNaN(num3)) {
+                if (num2 === num1 + 1 && num3 === num2 + 1) {
+                    return "Password cannot contain continuous ascending numbers (e.g., 123).";
+                }
+                if (num2 === num1 - 1 && num3 === num2 - 1) {
+                    return "Password cannot contain continuous descending numbers (e.g., 321).";
+                }
+            }
+        }
+        return null; // Null means the password is perfectly valid!
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const passwordError = validatePassword(formData.password);
+        if (passwordError) {
+            showToast(passwordError, 'error');
+            return; // Stop the function here so it doesn't submit!
+        }
         setLoading(true);
 
         try {

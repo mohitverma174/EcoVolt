@@ -33,7 +33,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(8);
     }
 
     @Bean
@@ -74,7 +74,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // 🌟 THE FIX: Added your Vercel URL alongside localhost!
+      
         configuration.setAllowedOrigins(List.of(
             "http://localhost:5173", 
             "https://eco-volt-ruby.vercel.app"
