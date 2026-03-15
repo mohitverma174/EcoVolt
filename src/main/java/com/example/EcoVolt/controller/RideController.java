@@ -13,7 +13,7 @@ import java.util.Random;
 
 @RestController
 @RequestMapping("/api/rides")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
 public class RideController {
 
     @Autowired

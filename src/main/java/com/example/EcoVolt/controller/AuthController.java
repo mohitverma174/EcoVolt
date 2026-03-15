@@ -17,8 +17,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-// 1. Allow React to talk to this controller
-@CrossOrigin(origins = "http://localhost:5173") 
+@CrossOrigin(origins = "*")
+ 
 public class AuthController {
 
     @Autowired
